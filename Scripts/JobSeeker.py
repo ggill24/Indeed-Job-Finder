@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 import urllib
 import re
+from Job import Job
 
 class JobSeeker:
 
@@ -11,6 +12,9 @@ class JobSeeker:
     keywords = set()
     keywords_list = None
 
+    #Jobs found
+    job_listings = list()
+
     def __init__(self, city, province, province_wide_search, *search_terms):
 
         self.city = city
@@ -19,7 +23,35 @@ class JobSeeker:
         self.keywords = set(search_terms)
         self.keywords_list = search_terms
 
+    def extract_job_information(self, jobs):
+
+        for j in jobs:
+            re_title = re.compile('rel="nofollow" target="_blank" title=.*">')
+            re_url = re.compile('href="/.*/.*amp;fccid=\S*')
+
+            job_title_matches = re_title.findall(j)
+            job_url_matches = re_url.findall(j)
+
+            if len(job_title_matches) > 0 and len(job_url_matches) > 0:
+                job_title_unfiltered = job_title_matches[0]
+                job_url_unfiltered = job_url_matches[0]
+
+                job_title = job_title_unfiltered[38:].replace('"', "").replace('>', "").replace('-', '')
+                job_url = "ca.indeed.com" + job_url_unfiltered[5:].replace('"', '')
+                job_listing = [job_title, job_url]
+                self.job_listings.append(job_listing)
+        
+
+
+
+
+
+
+
     def search(self):
+
+       if len(self.keywords_list) < 1:
+           return
 
        job_titles = self.keywords_list
        indeed_base_url = "http://www.indeed.ca/"
@@ -48,11 +80,21 @@ class JobSeeker:
        #get all the jobs containing the key words
        for job in jobs_found:
            for j in job:
-               results = str(j).lower().split("<div class=\"notes-container result-tab\">"
-                                              "</div>\n</div>\n</td>\n</tr>\n</table>\n</div>]]")
+               results = str(j).lower().split("div class=\" row result")
                for r in results:
                    if any(x in r for x in self.keywords):
                        jobs_filtered.append(r)
+       self.extract_job_information(jobs_filtered)
+
+
+
+
+
+
+
+
+
+
 
 
 
